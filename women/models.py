@@ -5,12 +5,13 @@ from django.urls import reverse
 class Women(models.Model):  # название табл будет Women
     # поле id автоматически прописывается в Model
     title = models.CharField(max_length=255, verbose_name="Заголовок")
+    slug = models.SlugField(max_length=255, unique=True, db_index=True, verbose_name="URL")
     content = models.TextField(blank=True, verbose_name="Текст статьи") # verbose_name для админ панели
     photo = models.ImageField(upload_to="photos/%Y/%m/%d/", verbose_name="Фото")
     time_create = models.DateTimeField(auto_now_add=True, verbose_name="Время создания")  # это поле неизменяемое
     time_update = models.DateTimeField(auto_now=True, verbose_name="Время изменения")  # это поле изменяемое при апдейте
     is_published = models.BooleanField(default=True, verbose_name="Публикация")
-    cat = models.ForeignKey('Category', on_delete=models.PROTECT, null=True, verbose_name="Категория")
+    cat = models.ForeignKey('Category', on_delete=models.PROTECT, verbose_name="Категория")
     # cat_id, id django автоматом добавляет
     """если загружается много файлов, то в photo делаем чтобы они распределялись по папкам по дате
      и в settings прописываем 2 переменные"""
@@ -22,7 +23,7 @@ class Women(models.Model):  # название табл будет Women
     # формирования нужных маршрутов для динам ссылок в данном случае для 'post'
     # reverse возвращает маршрут ввиде path("post/<int:post_id>" подставляя 'post_id'
     def get_absolute_url(self):  # так же наличие этой фук-ции добавляет "смотреть на сайте" в админ панели
-        return reverse('post', kwargs={'post_id': self.pk})
+        return reverse('post', kwargs={'post_slug': self.slug})
     # специальный класс для работы в админ панели с Women
     class Meta:
         verbose_name = "Известные женщины"
@@ -31,6 +32,7 @@ class Women(models.Model):  # название табл будет Women
 
 class Category(models.Model):
     name = models.CharField(max_length=100, db_index=True, verbose_name="Категория")
+    slug = models.SlugField(max_length=255, unique=True, db_index=True, verbose_name="URL")
 # db_index - поле будет индексировано, т.е. быстрее поиск по нему
     class Meta:
         verbose_name = "Категория"

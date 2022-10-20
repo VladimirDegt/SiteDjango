@@ -1,6 +1,7 @@
 from django.http import HttpResponse, HttpResponseNotFound, Http404
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 # для вывода данных из табл:
+from .forms import *
 from .models import *
 
 menu = [{'title': "О сайте", 'url_name': 'about'},
@@ -23,8 +24,23 @@ def index(request):  # request это ссылка на класс HttpRequest
 def about(request):
     return render(request, 'women/about.html', {'menu': menu, "title": "О сайте"})
 
-def addpage(request):
-    return HttpResponse("Добавление статьи")
+def addpage(request):  # фун-ция представления для формы добавления стр
+    """при первом появлении у пользователя request.method == None, а
+    при отправлении заполненной формы уже - POST"""
+    if request.method == "POST":
+        form = AddPostForm(request.POST)
+        if form.is_valid():  # проверка корректности внесенных данных
+            # print(form.cleaned_data)
+            try:
+                Women.object.create(**form.cleaned_data)  # добавляем в БД
+                return redirect('home')  # возвращаем на главную страницу
+            except:
+                form.add_error(None, 'Ошибка добавления поста')
+    else:
+        form = AddPostForm()
+    return render(request, 'women/addpage.html', {'form': form,
+                                                  'menu': menu,
+                                                  "title": "Добавление статьи"})
 
 def contact(request):
     return HttpResponse("Обратная связь")
@@ -35,8 +51,16 @@ def login(request):
 def pageNotFound(request, exception): # обработка 404 ошибки
     return HttpResponseNotFound("<h1>Упс, а нет такой страницы!</h1>")
 
-def show_post(request, post_id):
-    return HttpResponse(f"Отображение статьи с id = {post_id}")
+def show_post(request, post_slug):
+    post = get_object_or_404(Women, slug=post_slug)
+# фук-ция находит в Women статью с слагом, если нет то 404
+    context = {
+        'post': post,
+        'menu': menu,
+        "title": post.title,
+        'cat_selected': post.cat_id,
+    }
+    return render(request, 'women/post.html', context=context)
 
 def show_category(request, cat_id):
     posts = Women.objects.filter(cat_id=cat_id)  # фильтруем по рубрикам (по id)
