@@ -23,7 +23,7 @@ class Women(models.Model):  # название табл будет Women
     # формирования нужных маршрутов для динам ссылок в данном случае для 'post'
     # reverse возвращает маршрут ввиде path("post/<int:post_id>" подставляя 'post_id'
     def get_absolute_url(self):  # так же наличие этой фук-ции добавляет "смотреть на сайте" в админ панели
-        return reverse('post', kwargs={'post_slug': self.slug})
+        return reverse('post', kwargs={'post_slug': self.slug}) # при добавлении новой статьи будет возврат на новую статью
     # специальный класс для работы в админ панели с Women
     class Meta:
         verbose_name = "Известные женщины"
@@ -43,4 +43,4 @@ class Category(models.Model):
         return self.name
 
     def get_absolute_url(self):
-        return reverse('category', kwargs={'cat_id': self.pk})
+        return reverse('category', kwargs={'cat_slug': self.slug})

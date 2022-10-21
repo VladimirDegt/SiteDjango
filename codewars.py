@@ -1,30 +1,25 @@
-from re import findall
-def string_expansion(s):
-    if not s or s.isdigit():
+def inner(length, minimum, maximum, s):
+    if minimum == maximum:
+        return s.append(str(minimum))
+    s.append(str(minimum))
+    inner(length, minimum + 1, maximum, s)
+    s.append(str(minimum))
+    return s
+def ascend_descend(length, minimum, maximum):
+    s = []
+    if minimum == maximum:
+        return length * str(minimum)
+    elif length == 0 or maximum < minimum:
         return ''
-    elif s.isalpha():
-        return s
     else:
-        res = ''
-        expreg = findall(r"\d[A-Za-z]+", s)
-        expreg_start = findall(r'^[A-Za-z]+', s)
-        if len(expreg_start):
-            res += expreg_start[0]
-            for elem in expreg:
-                if len(elem) == 2:
-                    elem = int(elem[0]) * elem[1]
-                    res += elem
-                else:
-                    for i in range(1, len(elem)):
-                        res += (int(elem[0]) * elem[i])
-            return res
+        res = inner(length, minimum, maximum, s)
+        if len(res) < length:
+            a = res[:-1]
+            while len(a) < length:
+                a *= 2
+            return "".join(a)[:length]
         else:
-            for elem in expreg:
-                if len(elem) == 2:
-                    elem = int(elem[0]) * elem[1]
-                    res += elem
-                else:
-                    for i in range(1, len(elem)):
-                        res += (int(elem[0]) * elem[i])
-            return res
-print(string_expansion('A4g1b4d'))
+            return "".join(res)[:length]
+
+
+print(ascend_descend(4, 0, 5))
