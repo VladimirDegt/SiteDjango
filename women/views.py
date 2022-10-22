@@ -4,16 +4,18 @@ from django.urls import reverse_lazy
 from django.views.generic import ListView # класс для представления списков (главной страницы)
 from django.views.generic import DetailView # класс для представления конкретной страницы
 from django.views.generic import CreateView # класс для добавления новой статьи
+from django.contrib.auth.mixins import LoginRequiredMixin  # миксин для ограничения доступа не зарегистрировваных
+# пользователей к определенной странице
+from django.contrib.auth.decorators import login_required  # а это запрет для функций представления как выше для классов
+
 # для вывода данных из табл:
 from .forms import *
 from .models import *
+from .utils import *
 
-menu = [{'title': "О сайте", 'url_name': 'about'},
-        {'title': "Добавить статью", 'url_name': 'add_page'},
-        {'title': "Обратная связь", 'url_name': 'contact'},
-        {'title': "Войти", 'url_name': 'login'},
-]
-class WomenHome(ListView): # класс для представления главной страницы (списка)
+
+
+class WomenHome(DataMixin, ListView):  # класс для представления главной страницы (списка)
     model = Women  #  пытается взять все записи из таблицы Women и отобразить их вместо списка
     # т.к. по умолчанию ListView ссылается на women/women_list.html, то сделаем ссылку на готовый или создать list.html
     template_name = 'women/index.html'
@@ -23,11 +25,11 @@ class WomenHome(ListView): # класс для представления гла
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(**kwargs)  # сначала берем уже существующий контекст ('posts', 'women/index.html')
         # т.к. это словарь и ему можем добавить еще элементы
-        context['title'] = 'Главная страница'
-        context['menu'] = menu
-        context['cat_selected'] = 0  # когда выбраны все категории, то есть подстветка
-        return context
-    # для выборки отображения не всех полей табл Women,а с каким то условием, создаем фук-цию:
+        c_def = self.get_user_context(title='Главная страница')  # self.get_user_context обращение к DataMixin
+        context = dict(list(context.items()) + list(c_def.items()))  # объединение двух словарей
+        return context  # первый формируется на основании ListView, а второй на DataMixin
+
+    # для выборки отображения не всех полей табл Women, а с каким то условием, создаем фук-цию:
     def get_queryset(self):
         return Women.objects.filter(is_published=True)  # только опубликованные (галочка=True)
 
@@ -42,7 +44,7 @@ class WomenHome(ListView): # класс для представления гла
 #         'cat_selected': 0,  # для использования в base
 #     }
 #     return render(request, 'women/index.html', context=context)
-
+@login_required  # запрет на доступ к странице для не зарегистрированных
 def about(request):
     return render(request, 'women/about.html', {'menu': menu, "title": "О сайте"})
 
@@ -61,15 +63,15 @@ def about(request):
 #                                                   'menu': menu,
 #                                                   "title": "Добавление статьи"})
 
-class AddPage(CreateView):
+class AddPage(LoginRequiredMixin, DataMixin, CreateView):
     form_class = AddPostForm  # связь между классом формы и классом представления
     template_name = 'women/addpage.html'
-    success_url = reverse_lazy('home') # после добавления статьи идет вовзрат на указанный адрес
+    success_url = reverse_lazy('home')  # после добавления статьи идет возврат на указанный адрес
+    login_url = reverse_lazy('home')  # если пользователь не зарегистр-й, то его вернет на эту страницу
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['title'] = "Добавление статьи"
-        context['menu'] = menu
-        return context
+        c_def = self.get_user_context(title='Добавление статьи')
+        return dict(list(context.items()) + list(c_def.items()))
 
 def contact(request):
     return HttpResponse("Обратная связь")
@@ -91,7 +93,7 @@ def pageNotFound(request, exception): # обработка 404 ошибки
 #     }
 #     return render(request, 'women/post.html', context=context)
 
-class ShowPost(DetailView):
+class ShowPost(DataMixin, DetailView):
     model = Women
     template_name = 'women/post.html'
     slug_url_kwarg = 'post_slug'  # для использования в urls.py значения <slug:post_slug>, т.к. по умолчанию <slug:slug>
@@ -99,11 +101,10 @@ class ShowPost(DetailView):
     context_object_name = 'post' # определяем для использования в post.html
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['title'] = context['post']
-        context['menu'] = menu
-        return context
+        c_def = self.get_user_context(title=context['post'])
+        return dict(list(context.items()) + list(c_def.items()))
 
-class WomenCategory(ListView):
+class WomenCategory(DataMixin, ListView):
     model = Women
     template_name = 'women/index.html'
     context_object_name = 'posts'
@@ -112,10 +113,9 @@ class WomenCategory(ListView):
         return Women.objects.filter(cat__slug=self.kwargs['cat_slug'], is_published=True)
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['title'] = 'Категория - ' + str(context['posts'][0].cat)
-        context['menu'] = menu
-        context['cat_selected'] = context['posts'][0].cat_id
-        return context
+        c_def = self.get_user_context(title='Категория -' + str(context['posts'][0].cat),
+                                      cat_selected=context['posts'][0].cat.id)
+        return dict(list(context.items()) + list(c_def.items()))
 
 # def show_category(request, cat_id):
 #     posts = Women.objects.filter(cat_id=cat_id)  # фильтруем по рубрикам (по id)
