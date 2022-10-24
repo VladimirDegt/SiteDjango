@@ -23,11 +23,16 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('captcha/', include('captcha.urls')),
     path('', include('women.urls')),  # передаем все маршруты приложения
 ]
 """для того чтобы к верхним адресам добавились маршруты к нашим графическим
 фалам, прописываем ниже условие"""
 if settings.DEBUG:  # для процесса отладки в режиме True
+    import debug_toolbar
+    urlpatterns = [
+        path('__debug__/', include(debug_toolbar.urls)),
+    ] + urlpatterns
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 # (handler500, handler403, handler400) будут работать только в случае DEBUG = False

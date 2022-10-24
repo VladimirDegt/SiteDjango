@@ -1,9 +1,13 @@
 from django.http import HttpResponse, HttpResponseNotFound, Http404
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse_lazy
-from django.views.generic import ListView # класс для представления списков (главной страницы)
-from django.views.generic import DetailView # класс для представления конкретной страницы
-from django.views.generic import CreateView # класс для добавления новой статьи
+from django.views.generic import ListView  # класс для представления списков (главной страницы)
+from django.views.generic import DetailView  # класс для представления конкретной страницы
+from django.views.generic import CreateView  # класс для добавления новой статьи
+from django.contrib.auth.views import LoginView  # класс для авторизации
+from django.views.generic import FormView
+from django.contrib.auth import logout  # класс для авторизации
+from django.contrib.auth import login  # класс для авторизации
 from django.contrib.auth.mixins import LoginRequiredMixin  # миксин для ограничения доступа не зарегистрировваных
 # пользователей к определенной странице
 from django.contrib.auth.decorators import login_required  # а это запрет для функций представления как выше для классов
@@ -31,8 +35,8 @@ class WomenHome(DataMixin, ListView):  # класс для представле�
 
     # для выборки отображения не всех полей табл Women, а с каким то условием, создаем фук-цию:
     def get_queryset(self):
-        return Women.objects.filter(is_published=True)  # только опубликованные (галочка=True)
-
+        return Women.objects.filter(is_published=True).select_related('cat')  # только опубликованные (галочка=True)
+        # select_related используем для совместной загрузки и табл категории, для уменьшения sql запросов
 # def index(request):  # request это ссылка на класс HttpRequest
 #     posts = Women.objects.all()  # вывод из табл
 #     # return render(request, 'women/index.html', {'posts': posts, 'menu': menu, "title": "Главная страница"})
@@ -78,11 +82,22 @@ class AddPage(LoginRequiredMixin, DataMixin, CreateView):
         c_def = self.get_user_context(title='Добавление статьи')
         return dict(list(context.items()) + list(c_def.items()))
 
-def contact(request):
-    return HttpResponse("Обратная связь")
+# def contact(request):
+#     return HttpResponse("Обратная связь")
+class ContactFormView(DataMixin, FormView):
+    form_class = ContactForm
+    template_name = 'women/contact.html'
+    success_url = reverse_lazy('home')
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(**kwargs)
+        c_def = self.get_user_context(title='Обратная связь')
+        return dict(list(context.items()) + list(c_def.items()))
+    def form_valid(self, form):
+        print(form.cleaned_data)
+        return redirect('home')
 
-def login(request):
-    return HttpResponse("Авторизация")
+# def login(request):
+#     return HttpResponse("Авторизация")
 
 def pageNotFound(request, exception): # обработка 404 ошибки
     return HttpResponseNotFound("<h1>Упс, а нет такой страницы!</h1>")
@@ -115,11 +130,12 @@ class WomenCategory(DataMixin, ListView):
     context_object_name = 'posts'
     allow_empty = False # если не будет первой записи, то возбуждается 404
     def get_queryset(self):
-        return Women.objects.filter(cat__slug=self.kwargs['cat_slug'], is_published=True)
+        return Women.objects.filter(cat__slug=self.kwargs['cat_slug'], is_published=True).select_related('cat')
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(**kwargs)
-        c_def = self.get_user_context(title='Категория -' + str(context['posts'][0].cat),
-                                      cat_selected=context['posts'][0].cat.id)
+        c = Category.objects.get(slug=self.kwargs['cat_slug'])
+        c_def = self.get_user_context(title='Категория -' + str(c.name),
+                                      cat_selected=c.pk)
         return dict(list(context.items()) + list(c_def.items()))
 
 # def show_category(request, cat_id):
@@ -143,3 +159,25 @@ class RegisterUser(DataMixin, CreateView):
         context = super().get_context_data(**kwargs)
         c_def = self.get_user_context(title='Регистрация')
         return dict(list(context.items()) + list(c_def.items()))
+    #  для автоматической авторизации после регистрации пропишем:
+    def form_valid(self,form):  # вызывается при успешной проверке формы регистрации
+        user = form.save()  # добавляем пол-ля в БД
+        login(self.request, user)  # встроенная фун-ция авторизовывает пол-ля
+        return redirect('home')
+
+class LoginUser(DataMixin, LoginView):
+    form_class = LoginUserForm
+    template_name = 'women/login.html'
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(**kwargs)
+        c_def = self.get_user_context(title='Авторизация')
+        return dict(list(context.items()) + list(c_def.items()))
+
+    """по умолчанию форма перенаправляет на /accounts/profile/
+    для изменения поведения и перенаправления на главную страницу:"""
+    def get_success_url(self):
+        return reverse_lazy('home')
+def logout_user(request):  # фук-ция для Выйти
+    logout(request)
+    return redirect('login')

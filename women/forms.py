@@ -3,6 +3,9 @@ from .models import *
 # from django.core.exception import ValidationError
 from django.contrib.auth.forms import UserCreationForm, User
 # User объект, который работает с auth_user в БД
+from django.contrib.auth.forms import AuthenticationForm  # форма для авторизации
+from captcha.fields import CaptchaField
+
 #  форма добавления статьи
 class AddPostForm(forms.ModelForm):
     # конструктор для значения по умолчанию для поля cat
@@ -35,3 +38,11 @@ class RegisterUserForm(UserCreationForm):
     class Meta:
         model = User
         fields = ('username', 'email', 'password1', 'password2')
+class LoginUserForm(AuthenticationForm):
+    username = forms.CharField(label='Логин', widget=forms.TextInput(attrs={'class': 'form-input'}))
+    password = forms.CharField(label='Пароль', widget=forms.PasswordInput(attrs={'class': 'form-input'}))
+class ContactForm(forms.Form):
+    name = forms.CharField(label='Имя', max_length=255)
+    email = forms.EmailField(label='Email')
+    content = forms.CharField(widget=forms.Textarea(attrs={'cols': 60, 'rows': 10}))
+    captcha = CaptchaField(label='Код')

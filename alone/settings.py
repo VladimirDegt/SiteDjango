@@ -37,6 +37,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'debug_toolbar',  # отладка производительности и т.п.
+    'captcha',  # установка каптчи
     'women.apps.WomenConfig'
 ]
 
@@ -48,6 +50,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'debug_toolbar.middleware.DebugToolbarMiddleware',
 ]
 
 ROOT_URLCONF = 'alone.urls'
@@ -55,7 +58,7 @@ ROOT_URLCONF = 'alone.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],  # прописываем путь для новой папки где хранится новый html админ панели
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -131,3 +134,14 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')  # ссылка на папку media текущего каталога
 # BASE_DIR определяет рабочую папку проекта и к ней добавляется 'media'
 MEDIA_URL = '/media/' # добавляет к граф файлам этот префикс
+
+INTERNAL_IPS = [  # для debug toolbar
+    '127.0.0.1',
+]
+#  организовываем кеш способом хранения в файловой сис-ме
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.filebased.FileBasedCache',
+        'LOCATION': os.path.join(BASE_DIR, 'alone_cache'),  # в корневом каталоге проекта создаем папку
+    }
+}
