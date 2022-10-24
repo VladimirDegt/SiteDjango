@@ -7,7 +7,7 @@ from django.views.generic import CreateView # класс для добавлен
 from django.contrib.auth.mixins import LoginRequiredMixin  # миксин для ограничения доступа не зарегистрировваных
 # пользователей к определенной странице
 from django.contrib.auth.decorators import login_required  # а это запрет для функций представления как выше для классов
-
+from django.core.paginator import Paginator
 # для вывода данных из табл:
 from .forms import *
 from .models import *
@@ -46,7 +46,12 @@ class WomenHome(DataMixin, ListView):  # класс для представле�
 #     return render(request, 'women/index.html', context=context)
 @login_required  # запрет на доступ к странице для не зарегистрированных
 def about(request):
-    return render(request, 'women/about.html', {'menu': menu, "title": "О сайте"})
+    # пример пагинации для фук-ции представления
+    contact_list = Women.objects.all()
+    paginator = Paginator(contact_list, 3)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    return render(request, 'women/about.html', {'page_obj': page_obj, 'menu': menu, "title": "О сайте"})
 
 # def addpage(request):  # фун-ция представления для формы добавления стр
 #     """при первом появлении у пользователя request.method == None, а
@@ -129,3 +134,12 @@ class WomenCategory(DataMixin, ListView):
 #         'cat_selected': cat_id,
 #     }
 #     return render(request, 'women/index.html', context=context)
+class RegisterUser(DataMixin, CreateView):
+    form_class = RegisterUserForm  # форму регистрации сделали свою в формах
+    template_name = 'women/register.html'
+    success_url = reverse_lazy('login')
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(**kwargs)
+        c_def = self.get_user_context(title='Регистрация')
+        return dict(list(context.items()) + list(c_def.items()))

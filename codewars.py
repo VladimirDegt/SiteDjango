@@ -1,25 +1,12 @@
-def inner(length, minimum, maximum, s):
-    if minimum == maximum:
-        return s.append(str(minimum))
-    s.append(str(minimum))
-    inner(length, minimum + 1, maximum, s)
-    s.append(str(minimum))
-    return s
-def ascend_descend(length, minimum, maximum):
-    s = []
-    if minimum == maximum:
-        return length * str(minimum)
-    elif length == 0 or maximum < minimum:
-        return ''
-    else:
-        res = inner(length, minimum, maximum, s)
-        if len(res) < length:
-            a = res[:-1]
-            while len(a) < length:
-                a *= 2
-            return "".join(a)[:length]
-        else:
-            return "".join(res)[:length]
+from collections import Counter
+from string import ascii_lowercase
+def is_pangram(s):
+    d1 = Counter(ascii_lowercase)
+    d2 = Counter(s.lower())
+    d3 = d2.copy()
+    for elem in d2:
+        if not elem.isalpha():
+            del d3[elem]
+    return len(d1) == len(d3)
 
-
-print(ascend_descend(4, 0, 5))
+print(is_pangram("The quick brown fox jumps over the lazy dog"))

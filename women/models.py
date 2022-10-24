@@ -28,7 +28,7 @@ class Women(models.Model):  # название табл будет Women
     class Meta:
         verbose_name = "Известные женщины"
         verbose_name_plural = "Известные женщины"  # чтобы авто не добавляло "s" в конце
-        ordering = ['time_create', 'title']  # сортировка
+        ordering = ['id']  # сортировка
 
 class Category(models.Model):
     name = models.CharField(max_length=100, db_index=True, verbose_name="Категория")

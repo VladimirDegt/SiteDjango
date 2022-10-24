@@ -5,11 +5,12 @@ from django.db.models import Count
 menu = [{'title': "О сайте", 'url_name': 'about'},
         {'title': "Добавить статью", 'url_name': 'add_page'},
         {'title': "Обратная связь", 'url_name': 'contact'},
-        {'title': "Войти", 'url_name': 'login'},
 ]
 
 
 class DataMixin:
+        paginate_by = 3  # пагинация включена в класс ListView и он передает paginator и page_obj
+        # 3 кол-во элементов на одной странице
         def get_user_context(self, **kwargs):
                 context = kwargs  # в этом словаре уже есть параметр title из view
                 cats = Category.objects.annotate(Count('women'))  # считаем кол-во постов
